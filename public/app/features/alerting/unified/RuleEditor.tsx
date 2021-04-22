@@ -1,4 +1,4 @@
-import { Alert, Button, InfoBox, LoadingPlaceholder } from '@grafana/ui';
+import { Alert, InfoBox, LinkButton, LoadingPlaceholder } from '@grafana/ui';
 import Page from 'app/core/components/Page/Page';
 import { useCleanup } from 'app/core/hooks/useCleanup';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
@@ -9,6 +9,7 @@ import { AlertRuleForm } from './components/rule-editor/AlertRuleForm';
 import { useUnifiedAlertingSelector } from './hooks/useUnifiedAlertingSelector';
 import { fetchExistingRuleAction } from './state/actions';
 import { parseRuleIdentifier } from './utils/rules';
+import { locationUtil } from '@grafana/data';
 
 interface ExistingRuleEditorProps {
   identifier: RuleIdentifier;
@@ -45,9 +46,7 @@ const ExistingRuleEditor: FC<ExistingRuleEditorProps> = ({ identifier }) => {
       <Page.Contents>
         <InfoBox severity="warning" title="Rule not found">
           <p>Sorry! This rule does not exist.</p>
-          <a href="/alerting/list">
-            <Button>To rule list</Button>
-          </a>
+          <LinkButton href={locationUtil.assureBaseUrl('/alerting/list')}>To rule list</LinkButton>
         </InfoBox>
       </Page.Contents>
     );
