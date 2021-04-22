@@ -12,7 +12,7 @@ import {
   RulerRulesConfigDTO,
 } from 'app/types/unified-alerting-dto';
 import { fetchNotifiers } from '../api/grafana';
-import { fetchAlertManagerConfig, fetchAlerts, fetchSilences } from '../api/alertmanager';
+import { fetchAlertManagerConfig, fetchAlerts, fetchSilences, expireSilence } from '../api/alertmanager';
 import { fetchRules } from '../api/prometheus';
 import {
   deleteRulerRulesGroup,
@@ -324,3 +324,11 @@ export const fetchAmAlertsAction = createAsyncThunk(
   (alertManagerSourceName: string): Promise<AlertmanagerAlert[]> =>
     withSerializedError(fetchAlerts(alertManagerSourceName, [], true, true, true))
 );
+
+export const expireSilenceAction = (alertManagerSourceName: string, silenceId: string): ThunkResult<void> => {
+  return async (dispatch) => {
+    await expireSilence(alertManagerSourceName, silenceId);
+    dispatch(fetchSilencesAction(alertManagerSourceName));
+    dispatch(fetchAmAlertsAction(alertManagerSourceName));
+  };
+};
