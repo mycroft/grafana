@@ -83,7 +83,7 @@ export const ConfirmModal = ({
           >
             {confirmText}
           </Button>
-          <Button variant="secondary" onClick={onDismiss}>
+          <Button variant="secondary" onClick={onDismiss} buttonStyle="outline">
             {dismissText}
           </Button>
         </HorizontalGroup>
