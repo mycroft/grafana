@@ -9,6 +9,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/remotecache"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/registry"
@@ -24,11 +25,12 @@ import (
 // schedules alert evaluations and makes sure notifications
 // are sent.
 type AlertEngine struct {
-	RenderService    rendering.Service             `inject:""`
-	Bus              bus.Bus                       `inject:""`
-	RequestValidator models.PluginRequestValidator `inject:""`
-	DataService      plugins.DataRequestHandler    `inject:""`
-	Cfg              *setting.Cfg                  `inject:""`
+	RenderService      rendering.Service             `inject:""`
+	Bus                bus.Bus                       `inject:""`
+	RequestValidator   models.PluginRequestValidator `inject:""`
+	DataService        plugins.DataRequestHandler    `inject:""`
+	Cfg                *setting.Cfg                  `inject:""`
+	RemoteCacheService *remotecache.RemoteCache      `inject:""`
 
 	execQueue     chan *Job
 	ticker        *Ticker
@@ -39,8 +41,13 @@ type AlertEngine struct {
 	resultHandler resultHandler
 }
 
+type ClusterAlertingInstance struct {
+	Instance string
+}
+
 func init() {
 	registry.RegisterService(&AlertEngine{})
+	remotecache.Register(&ClusterAlertingInstance{})
 }
 
 // IsDisabled returns true if the alerting service is disable for this instance.
@@ -77,6 +84,8 @@ func (e *AlertEngine) alertingTicker(grafanaCtx context.Context) error {
 		}
 	}()
 
+	cluster_alerting_instance := setting.AlertingClusteringInstance
+
 	tickIndex := 0
 
 	for {
@@ -89,7 +98,48 @@ func (e *AlertEngine) alertingTicker(grafanaCtx context.Context) error {
 				e.scheduler.Update(e.ruleReader.fetch())
 			}
 
-			e.scheduler.Tick(tick, e.execQueue)
+			schedule_alerts := true
+			current_active_instance := cluster_alerting_instance
+
+			if setting.AlertingClusteringEnabled {
+				cache_record, err := e.RemoteCacheService.Get("cluster_alerting_instance")
+				if err != nil {
+					e.log.Warn("Alert Clustering: Could not retrieve the alerting instance", "instance", cluster_alerting_instance, "err", err)
+				}
+
+				if cluster_instance_record, ok := cache_record.(*ClusterAlertingInstance); ok {
+					current_active_instance = cluster_instance_record.Instance
+				}
+
+				if cache_record == nil || current_active_instance == cluster_alerting_instance {
+					err = e.RemoteCacheService.Set("cluster_alerting_instance",
+						&ClusterAlertingInstance{
+							Instance: cluster_alerting_instance,
+						},
+						time.Second*time.Duration(setting.AlertingClusteringTimeout),
+					)
+
+					if err != nil {
+						e.log.Warn("Alert Clustering: Could not set the cluster_alerting_instance in cache", "err", err)
+					}
+				} else {
+					schedule_alerts = false
+				}
+			}
+
+			if schedule_alerts {
+				e.scheduler.Tick(tick, e.execQueue)
+			} else {
+				if tickIndex%10 == 0 {
+					e.log.Debug("Alert Clustering enabled but this instance is not marked active: Skipping alerting.",
+						"instance",
+						cluster_alerting_instance,
+						"active",
+						current_active_instance,
+					)
+				}
+			}
+
 			tickIndex++
 		}
 	}
