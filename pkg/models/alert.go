@@ -209,3 +209,14 @@ type AlertStateInfoDTO struct {
 	State        AlertStateType `json:"state"`
 	NewStateDate time.Time      `json:"newStateDate"`
 }
+
+type ClusterAlertState struct {
+	Id             int64
+	Setting        string
+	Value          string
+	ExpirationTime time.Time
+}
+
+type GetClusterAlertQuery struct {
+	Result *ClusterAlertState
+}

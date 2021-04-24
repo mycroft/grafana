@@ -168,6 +168,10 @@ var (
 	AlertingMaxAttempts         int
 	AlertingMinInterval         int64
 
+	AlertingClusteringEnabled  bool
+	AlertingClusteringInstance string
+	AlertingClusteringTimeout  int64
+
 	// Explore UI
 	ExploreEnabled bool
 
@@ -1311,6 +1315,9 @@ func readRenderingSettings(iniFile *ini.File, cfg *Cfg) error {
 func readAlertingSettings(iniFile *ini.File) error {
 	alerting := iniFile.Section("alerting")
 	AlertingEnabled = alerting.Key("enabled").MustBool(true)
+	AlertingClusteringEnabled = alerting.Key("clustering_enabled").MustBool(false)
+	AlertingClusteringInstance = alerting.Key("clustering_instance").MustString("localhost")
+	AlertingClusteringTimeout = alerting.Key("clustering_timeout_seconds").MustInt64(300)
 	ExecuteAlerts = alerting.Key("execute_alerts").MustBool(true)
 	AlertingRenderLimit = alerting.Key("concurrent_render_limit").MustInt(5)
 

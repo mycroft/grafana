@@ -1099,6 +1099,18 @@ This setting should be expressed as a duration. Examples: 6h (hours), 10d (days)
 
 Configures max number of alert annotations that Grafana stores. Default value is 0, which keeps all alert annotations.
 
+### cluster_alerting
+
+If enabled, Grafana will try to lock its instance in cache as the sole responsible to evaluate alerts. Default is `false`.
+
+### clustering_instance
+
+Set internal lock name. Each `cluster_instance` should be different. Default is `localhost`.
+
+### clustering_timeout_seconds
+
+Default timeout before token expires. Once expired, another instance can take the alerting ownership. Default is `300`.
+
 <hr>
 
 ## [annotations]
