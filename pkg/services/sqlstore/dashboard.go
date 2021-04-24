@@ -29,6 +29,7 @@ func init() {
 	bus.AddHandler("sql", GetDashboard)
 	bus.AddHandler("sql", GetDashboards)
 	bus.AddHandler("sql", DeleteDashboard)
+	bus.AddHandler("sql", UpdateDashboardViewed)
 	bus.AddHandler("sql", SearchDashboards)
 	bus.AddHandler("sql", GetDashboardTags)
 	bus.AddHandler("sql", GetDashboardSlugById)
@@ -49,6 +50,22 @@ func (ss *SQLStore) SaveDashboard(cmd models.SaveDashboardCommand) (*models.Dash
 		return saveDashboard(sess, &cmd)
 	})
 	return cmd.Result, err
+}
+
+func (ss *SQLStore) UpdateDashboardViewed(cmd models.UpdateDashboardViewedCommand) error {
+	err := ss.WithTransactionalDbSession(context.Background(), func(sess *DBSession) error {
+		return updateDashboardViewed(sess, &cmd)
+	})
+	return err
+}
+
+func updateDashboardViewed(sess *DBSession, cmd *models.UpdateDashboardViewedCommand) error {
+	_, err := sess.Exec("UPDATE dashboard SET viewed_by = ?, viewed = NOW() WHERE id=?",
+		cmd.UserId,
+		cmd.Id,
+	)
+
+	return err
 }
 
 func saveDashboard(sess *DBSession, cmd *models.SaveDashboardCommand) error {
@@ -404,6 +421,12 @@ func GetDashboardTags(query *models.GetDashboardTagsQuery) error {
 	sess := x.SQL(sql, query.OrgId)
 	err := sess.Find(&query.Result)
 	return err
+}
+
+func UpdateDashboardViewed(cmd *models.UpdateDashboardViewedCommand) error {
+	return inTransaction(func(sess *DBSession) error {
+		return updateDashboardViewed(sess, cmd)
+	})
 }
 
 func DeleteDashboard(cmd *models.DeleteDashboardCommand) error {

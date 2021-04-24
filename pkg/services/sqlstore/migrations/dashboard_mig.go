@@ -225,4 +225,12 @@ func addDashboardMigration(mg *Migrator) {
 
 	mg.AddMigration("delete stars for deleted dashboards", NewRawSQLMigration(
 		"DELETE FROM star WHERE dashboard_id NOT IN (SELECT id FROM dashboard)"))
+
+	mg.AddMigration("Add column viewed in dashboard - v2 (criteo)", NewAddColumnMigration(dashboardV2, &Column{
+		Name: "viewed", Type: DB_DateTime, Nullable: true,
+	}))
+
+	mg.AddMigration("Add column viewed_by in dashboard - v2 (criteo)", NewAddColumnMigration(dashboardV2, &Column{
+		Name: "viewed_by", Type: DB_Int, Nullable: true,
+	}))
 }

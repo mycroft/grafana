@@ -68,6 +68,14 @@ func (hs *HTTPServer) GetDashboard(c *models.ReqContext) response.Response {
 		}
 	}
 
+	if nil != c.SignedInUser {
+		dashSvc := dashboards.NewService(hs.SQLStore)
+		err := dashSvc.UpdateDashboardViewed(dash.Id, c.SignedInUser.UserId)
+		if err != nil {
+			return response.Error(500, "Error while logging the dashboard access", err)
+		}
+	}
+
 	guardian := guardian.New(dash.Id, c.OrgId, c.SignedInUser)
 	if canView, err := guardian.CanView(); err != nil || !canView {
 		return dashboardGuardianResponse(err)

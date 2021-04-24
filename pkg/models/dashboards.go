@@ -168,6 +168,9 @@ type Dashboard struct {
 
 	Title string
 	Data  *simplejson.Json
+
+	Viewed   time.Time
+	ViewedBy int64
 }
 
 func (d *Dashboard) SetId(id int64) {
@@ -362,6 +365,11 @@ type DeleteDashboardCommand struct {
 
 type DeleteOrphanedProvisionedDashboardsCommand struct {
 	ReaderNames []string
+}
+
+type UpdateDashboardViewedCommand struct {
+	Id     int64
+	UserId int64
 }
 
 //

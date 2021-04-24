@@ -23,6 +23,7 @@ type DashboardService interface {
 	SaveDashboard(dto *SaveDashboardDTO, allowUiUpdate bool) (*models.Dashboard, error)
 	ImportDashboard(dto *SaveDashboardDTO) (*models.Dashboard, error)
 	DeleteDashboard(dashboardId int64, orgId int64) error
+	UpdateDashboardViewed(dashboardId int64, userId int64) error
 	MakeUserAdmin(orgID int64, userID, dashboardID int64, setViewAndEditPermissions bool) error
 }
 
@@ -300,6 +301,11 @@ func (dr *dashboardServiceImpl) DeleteDashboard(dashboardId int64, orgId int64) 
 	return dr.deleteDashboard(dashboardId, orgId, true)
 }
 
+// UpdateDashboardViewed updates the viewed by/at information in database.
+func (dr *dashboardServiceImpl) UpdateDashboardViewed(dashboardId int64, userId int64) error {
+	return dr.updateDashboardViewed(dashboardId, userId)
+}
+
 // DeleteProvisionedDashboard removes dashboard from the DB even if it is provisioned.
 func (dr *dashboardServiceImpl) DeleteProvisionedDashboard(dashboardId int64, orgId int64) error {
 	return dr.deleteDashboard(dashboardId, orgId, false)
@@ -317,6 +323,11 @@ func (dr *dashboardServiceImpl) deleteDashboard(dashboardId int64, orgId int64, 
 		}
 	}
 	cmd := &models.DeleteDashboardCommand{OrgId: orgId, Id: dashboardId}
+	return bus.Dispatch(cmd)
+}
+
+func (dr *dashboardServiceImpl) updateDashboardViewed(dashboardId int64, userId int64) error {
+	cmd := &models.UpdateDashboardViewedCommand{Id: dashboardId, UserId: dashboardId}
 	return bus.Dispatch(cmd)
 }
 
